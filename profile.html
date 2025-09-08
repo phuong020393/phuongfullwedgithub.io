@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Thông tin cá nhân</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/@supabase/supabase-js"></script>
+</head>
+<body>
+  <div id="navbar"></div>
+  <div class="container">
+    <h1>👤 Thông tin cá nhân</h1>
+    <div id="profile-info">
+      <p><b>Email:</b> <span id="user-email"></span></p>
+      <p><b>Số dư:</b> <span id="user-balance"></span> VNĐ</p>
+      <button onclick="window.location.href='lichsu.html'">📖 Xem lịch sử giao dịch</button>
+      <button onclick="logout()">🚪 Đăng xuất</button>
+    </div>
+  </div>
+  <div id="footer"></div>
+  <script src="layout.js"></script>
+  <script>
+    const SUPABASE_URL = "https://vfrdszlszwzfakxckdfm.supabase.co";
+    const SUPABASE_ANON_KEY = "YOUR_ANON_KEY_HERE";
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    let currentUser = null;
+    supabaseClient.auth.getUser().then(async ({ data }) => {
+      if (!data?.user) {
+        alert("⚠️ Bạn cần đăng nhập!");
+        window.location.href = "login.html";
+      } else {
+        currentUser = data.user;
+        loadProfile();
+      }
+    });
+    async function loadProfile() {
+      const { data, error } = await supabaseClient
+        .from("profiles")
+        .select("email, balance")
+        .eq("id", currentUser.id)
+        .single();
+      if (error) {
+        console.error(error);
+        return;
+      }
+      document.getElementById("user-email").innerText = data.email;
+      document.getElementById("user-balance").innerText = data.balance;
+    }
+    async function logout() {
+      await supabaseClient.auth.signOut();
+      window.location.href = "login.html";
+    }
+  </script>
+</body>
+</html>

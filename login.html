@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Đăng nhập</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/@supabase/supabase-js"></script>
+</head>
+<body>
+  <div id="navbar"></div>
+  <div class="container">
+    <h1>🔑 Đăng nhập</h1>
+    <input type="email" id="email" placeholder="Email"><br>
+    <input type="password" id="password" placeholder="Mật khẩu"><br>
+    <button onclick="login()">Đăng nhập</button>
+    <button onclick="signup()">Đăng ký</button>
+  </div>
+  <div id="footer"></div>
+  <script src="layout.js"></script>
+  <script>
+    const SUPABASE_URL = "https://vfrdszlszwzfakxckdfm.supabase.co";
+    const SUPABASE_ANON_KEY = "YOUR_ANON_KEY_HERE";
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    async function login() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      if (error) {
+        alert("Đăng nhập thất bại: " + error.message);
+      } else {
+        window.location.href = "profile.html";
+      }
+    }
+    async function signup() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const { error } = await supabaseClient.auth.signUp({ email, password });
+      if (error) {
+        alert("Đăng ký thất bại: " + error.message);
+      } else {
+        alert("Đăng ký thành công! Hãy đăng nhập.");
+      }
+    }
+  </script>
+</body>
+</html>
