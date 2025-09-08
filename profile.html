@@ -2,54 +2,65 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <title>Thông tin cá nhân</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thông tin cá nhân - Phuong Shop</title>
   <link rel="stylesheet" href="style.css">
-  <script src="https://unpkg.com/@supabase/supabase-js"></script>
 </head>
 <body>
-  <div id="navbar"></div>
+  <header>👤 Thông tin cá nhân</header>
   <div class="container">
-    <h1>👤 Thông tin cá nhân</h1>
-    <div id="profile-info">
-      <p><b>Email:</b> <span id="user-email"></span></p>
-      <p><b>Số dư:</b> <span id="user-balance"></span> VNĐ</p>
-      <button onclick="window.location.href='lichsu.html'">📖 Xem lịch sử giao dịch</button>
-      <button onclick="logout()">🚪 Đăng xuất</button>
-    </div>
+    <h2>Xin chào, <span id="userEmail">...</span></h2>
+    <p>Email: <span id="email"></span></p>
+    <p>User ID: <span id="userId"></span></p>
+    <div class="wallet">💰 Số dư ví: <span id="balance">0</span> VNĐ</div>
+    <h3>📜 Lịch sử giao dịch</h3>
+    <table border="1" width="100%">
+      <thead><tr><th>Ngày</th><th>Nội dung</th><th>Số tiền</th></tr></thead>
+      <tbody id="history"><tr><td colspan="3">Chưa có giao dịch</td></tr></tbody>
+    </table>
+    <button id="logoutBtn">Đăng xuất</button>
+    <button id="topupBtn">Nạp 50,000 VNĐ (demo)</button>
   </div>
-  <div id="footer"></div>
-  <script src="layout.js"></script>
-  <script>
-    const SUPABASE_URL = "https://vfrdszlszwzfakxckdfm.supabase.co";
-    const SUPABASE_ANON_KEY = "YOUR_ANON_KEY_HERE";
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    let currentUser = null;
-    supabaseClient.auth.getUser().then(async ({ data }) => {
-      if (!data?.user) {
-        alert("⚠️ Bạn cần đăng nhập!");
-        window.location.href = "login.html";
-      } else {
-        currentUser = data.user;
-        loadProfile();
-      }
-    });
+
+  <script type="module">
+    import { supabase } from "./supabase.js";
+
     async function loadProfile() {
-      const { data, error } = await supabaseClient
-        .from("profiles")
-        .select("email, balance")
-        .eq("id", currentUser.id)
-        .single();
-      if (error) {
-        console.error(error);
-        return;
-      }
-      document.getElementById("user-email").innerText = data.email;
-      document.getElementById("user-balance").innerText = data.balance;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { window.location.href = "login.html"; return; }
+
+      document.getElementById("userEmail").innerText = user.email;
+      document.getElementById("email").innerText = user.email;
+      document.getElementById("userId").innerText = user.id;
+
+      const { data: userData } = await supabase.from("users").select("balance").eq("id", user.id).single();
+      if (userData) document.getElementById("balance").innerText = userData.balance;
+
+      const { data: txs } = await supabase.from("transactions").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
+      const historyEl = document.getElementById("history");
+      historyEl.innerHTML = "";
+      if (txs && txs.length > 0) {
+        txs.forEach(tx => {
+          historyEl.innerHTML += `<tr><td>${new Date(tx.created_at).toLocaleString()}</td><td>${tx.description}</td><td>${tx.amount}</td></tr>`;
+        });
+      } else historyEl.innerHTML = "<tr><td colspan='3'>Chưa có giao dịch</td></tr>";
     }
-    async function logout() {
-      await supabaseClient.auth.signOut();
+
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      await supabase.auth.signOut();
       window.location.href = "login.html";
-    }
+    });
+
+    document.getElementById("topupBtn").addEventListener("click", async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      await supabase.from("transactions").insert([{ user_id: user.id, description: "Nạp tiền", amount: 50000 }]);
+      await supabase.rpc("increment_balance", { uid: user.id, amount: 50000 });
+      alert("Nạp thành công!");
+      loadProfile();
+    });
+
+    loadProfile();
   </script>
 </body>
 </html>
